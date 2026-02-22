@@ -114,27 +114,8 @@ const _abuseFilter = {
     },
 };
 
-class WorkaroundCCNormProvider extends CCNormProvider {
-    protected async loadConversionTable(url: string): Promise<Map<string, string>> {
-        mw.loader.load(url);
-
-        return new Promise((resolve, reject) => {
-            const handler = (table: Record<string, string>) => {
-                if (typeof table !== 'object' || !table) {
-                    reject(new Error(`Invalid conversion table format in ${url}`));
-                } else {
-                    resolve(new Map(Object.entries(table)));
-                }
-                mw.hook('userjs.abuseFilter.equivset').remove(handler);
-            };
-
-            mw.hook('userjs.abuseFilter.equivset').add(handler);
-        });
-    }
-}
-
-AbuseFilterFunctions.ccnormProvider = new WorkaroundCCNormProvider(
-    'https://gitlab-content.toolforge.org/msz2001/abusefilter-analyzer/-/raw/deploy/equivset.js?mime=text/javascript&maxage=3600'
+AbuseFilterFunctions.ccnormProvider = new CCNormProvider(
+    'https://gitlab-content.toolforge.org/msz2001/abusefilter-analyzer/-/raw/deploy/equivset.json?mime=application/json&maxage=3600'
 );
 initializeTranslations();
 mw.libs.abuseFilter = _abuseFilter;
