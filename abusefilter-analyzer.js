@@ -162,24 +162,7 @@ const _abuseFilter = {
         },
     },
 };
-class WorkaroundCCNormProvider extends _evaluator_functions_CCNormProvider_js__WEBPACK_IMPORTED_MODULE_3__.CCNormProvider {
-    async loadConversionTable(url) {
-        mw.loader.load(url);
-        return new Promise((resolve, reject) => {
-            const handler = (table) => {
-                if (typeof table !== 'object' || !table) {
-                    reject(new Error(`Invalid conversion table format in ${url}`));
-                }
-                else {
-                    resolve(new Map(Object.entries(table)));
-                }
-                mw.hook('userjs.abuseFilter.equivset').remove(handler);
-            };
-            mw.hook('userjs.abuseFilter.equivset').add(handler);
-        });
-    }
-}
-_evaluator_functions_AbuseFilterFunctions_js__WEBPACK_IMPORTED_MODULE_2__.AbuseFilterFunctions.ccnormProvider = new WorkaroundCCNormProvider('https://gitlab-content.toolforge.org/msz2001/abusefilter-analyzer/-/raw/deploy/equivset.js?mime=text/javascript&maxage=3600');
+_evaluator_functions_AbuseFilterFunctions_js__WEBPACK_IMPORTED_MODULE_2__.AbuseFilterFunctions.ccnormProvider = new _evaluator_functions_CCNormProvider_js__WEBPACK_IMPORTED_MODULE_3__.CCNormProvider('https://gitlab-content.toolforge.org/msz2001/abusefilter-analyzer/-/raw/deploy/equivset.json?mime=application/json&maxage=3600');
 (0,_i18n_i18n_js__WEBPACK_IMPORTED_MODULE_30__.initializeTranslations)();
 mw.libs.abuseFilter = _abuseFilter;
 mw.hook('userjs.abuseFilter').fire(_abuseFilter);
