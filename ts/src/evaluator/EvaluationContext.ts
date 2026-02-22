@@ -1,6 +1,7 @@
 import { IEvaluationContext } from '../model/IEvaluationContext.js';
 import { IValue } from '../model/value/IValue.js';
 import { VariableValue } from './value/VariableValue.js';
+import { VariablesStore } from './VariablesStore.js';
 
 export class EvaluationContext implements IEvaluationContext {
     public static readonly METADATA_LOG_ID = 'logId';
@@ -10,7 +11,7 @@ export class EvaluationContext implements IEvaluationContext {
     protected readonly parentContext: EvaluationContext | null = null;
 
     /** Here our variables will be stored. */
-    protected readonly variables: Map<string, IValue> = new Map();
+    protected readonly variables: VariablesStore = new VariablesStore();
 
     public readonly rootContext: IEvaluationContext;
 
@@ -45,12 +46,9 @@ export class EvaluationContext implements IEvaluationContext {
     }
 
     public getVariable(variableName: string): VariableValue {
-        // Variable names are case-insensitive in AbuseFilter
-        variableName = variableName.toLowerCase();
-
         // First, look in our collection and if found return the value
         const localValue = this.variables.get(variableName);
-        if (localValue != undefined) return VariableValue.fromValue(localValue, variableName);
+        if (localValue !== null) return localValue;
 
         // If we don't have the variable, perhaps our parent has it
         if (this.parentContext !== null) {
@@ -61,9 +59,6 @@ export class EvaluationContext implements IEvaluationContext {
     }
 
     public setVariable(variableName: string, newValue: IValue): void {
-        // Variable names are case-insensitive in AbuseFilter
-        variableName = variableName.toLowerCase();
-        
         this.variables.set(variableName, newValue);
     }
 
