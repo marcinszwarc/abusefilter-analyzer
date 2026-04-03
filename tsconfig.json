@@ -14,10 +14,12 @@
         "moduleResolution": "Node16",
         "outDir": "js",
         "resolveJsonModule": true,
+        "rootDir": "ts",
         "declaration": true
     },
     "include": [
         "./ts",
         "./node_modules/types-mediawiki",
+        "./node_modules/@types",
     ]
 }
