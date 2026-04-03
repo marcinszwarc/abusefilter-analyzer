@@ -254,6 +254,14 @@ mw.util.addCSS(`
     margin-left: 0.2em;
 }
 
+.afa-masscheck-root p:last-child {
+    margin-bottom: 0;
+}
+.afa-masscheck-root p .oo-ui-widget {
+    margin-top: -5px;
+    margin-bottom: -5px;
+}
+
 .afa-masscheck-frequency-loglinks {
     display: block;
     font-size: 0.9em;

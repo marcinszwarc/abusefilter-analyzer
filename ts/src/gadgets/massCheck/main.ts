@@ -19,7 +19,9 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
     const isSingleFilterLog = filterId && (filterId.indexOf('|') === -1);
     
     if (isSingleFilterLog) {
-        displayOnFilterLogPage(filterId);
+        mw.loader.using(['oojs-ui-core', 'oojs-ui-widgets'], () => {
+            displayOnFilterLogPage(filterId);
+        });
     }
     
     function displayOnFilterLogPage(filterId: string) {
@@ -29,13 +31,21 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
         const summaryElement = contentElement.querySelector('.mw-specialpage-summary');
         if (!summaryElement) return;
     
-        const rootElement = document.createElement('div');
+        const wrappingPanel = new OO.ui.PanelLayout({
+            padded: true,
+            expanded: false,
+            framed: true,
+        });
+        const rootElement = wrappingPanel.$element[0];
+        rootElement.classList.add('afa-masscheck-root');
         contentElement.insertBefore(rootElement, summaryElement.nextSibling);
-    
-        const treeHeader = document.createElement('h3');
-        treeHeader.textContent = i18n('afa-masscheck-header');
-        contentElement.insertBefore(treeHeader, summaryElement.nextSibling);
-    
+
+        // Using FieldsetLayout only for its header. Otherwise than that, OOUI forms look terrible
+        const fieldsetLayout = new OO.ui.FieldsetLayout({
+            label: i18n('afa-masscheck-header'),
+        });
+        rootElement.append(fieldsetLayout.$element[0]);
+
         const par1 = document.createElement('p');
         par1.textContent = i18n('afa-masscheck-description');
         rootElement.appendChild(par1);
@@ -44,27 +54,35 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
         rootElement.appendChild(form);
         
         const par2 = document.createElement('p');
-        par2.textContent = i18n('afa-masscheck-form-numberlabel') + ' ';
         form.appendChild(par2);
 
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.value = '50';
-        input.min = '1';
-        input.style.width = '4em';
-        input.style.marginRight = '0.5em';
-        par2.appendChild(input);
-    
-        const button = document.createElement('button');
-        button.type = 'submit';
-        button.textContent = i18n('afa-masscheck-form-submitlabel');
-        par2.appendChild(button);
+        const inputLabel = document.createElement('label');
+        inputLabel.textContent = i18n('afa-masscheck-form-numberlabel') + ' ';
+        inputLabel.setAttribute('for', 'afa-masscheck-form-number');
+        par2.appendChild(inputLabel);
+
+        const numberWidget = new OO.ui.NumberInputWidget({
+            min: 1,
+            value: '50',
+            showButtons: false,
+            inputId: 'afa-masscheck-form-number',
+        });
+        numberWidget.$element[0].style.width = '5em';
+        par2.appendChild(numberWidget.$element[0]);
+
+        const buttonWidget = new OO.ui.ButtonInputWidget({
+            type: 'submit',
+            label: i18n('afa-masscheck-form-submitlabel'),
+            flags: ['progressive', 'primary'],
+        });
+        par2.appendChild(buttonWidget.$element[0]);
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             e.stopImmediatePropagation();
 
-            const count = parseInt(input.value, 10);
-            if (isNaN(count) || count < 1) {
+            const count = numberWidget.getNumericValue();
+            if (isNaN(count) || count < 1 || !Number.isInteger(count)) {
                 alert(i18n('afa-masscheck-form-negative'));
                 return;
             }
@@ -111,7 +129,7 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
             );
         });
     }
-    
+
     async function displayFrequencyAnalysis(
         rootElement: HTMLElement,
         filterId: string,

@@ -26,21 +26,19 @@ export class ValueFrequencyPopup {
             entry => this.isLongValue(entry.value)
         );
 
-        mw.loader.using(['oojs-ui-core', 'oojs-ui-widgets'], () => {
-            const popup = new OO.ui.PopupWidget({
-                autoClose: true,
-                padded: true,
-                width: useWidePopup ? window.innerWidth * 0.9 : 350,
-                $content: $(content),
-                $floatableContainer: $anchor,
-                anchor: !!attachToNode,
-                head: true,
-                label: i18n('afa-masscheck-frequency-header'),
-            });
-            
-            $(document.body).append(popup.$element);
-            popup.toggle(true);
+        const popup = new OO.ui.PopupWidget({
+            autoClose: true,
+            padded: true,
+            width: useWidePopup ? window.innerWidth * 0.9 : 350,
+            $content: $(content),
+            $floatableContainer: $anchor,
+            anchor: !!attachToNode,
+            head: true,
+            label: i18n('afa-masscheck-frequency-header'),
         });
+        
+        $(document.body).append(popup.$element);
+        popup.toggle(true);
     }
 
     protected makeMainContent(valueFrequencies: ValueFrequencies): HTMLElement {
