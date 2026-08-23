@@ -270,12 +270,27 @@ mw.util.addCSS(`
     overflow-y: auto;
 }
 
+.afa-masscheck-result::before {
+    margin-right: 0.3em;
+}
+
+.afa-masscheck-result-true::before {
+    content: '✔';
+    color: var(--afa-color-true);
+}
+
+.afa-masscheck-result-false::before {
+    content: '✘';
+    color: var(--afa-color-false);
+}
+
 summary {
     width: fit-content;
 }
 
 html.skin-theme-clientpref-night .afa-tree-container,
-html.skin-theme-clientpref-night .afa-value {
+html.skin-theme-clientpref-night .afa-value,
+html.skin-theme-clientpref-night .afa-masscheck-result {
     --afa-color-value-keyword: #749afa;
     --afa-color-value-string: #e08870;
     --afa-color-value-number: #b6f2b6;
@@ -288,7 +303,8 @@ html.skin-theme-clientpref-night .afa-value {
 
 @media screen and (prefers-color-scheme: dark) {
     html.skin-theme-clientpref-os .afa-tree-container,
-    html.skin-theme-clientpref-night .afa-value {
+    html.skin-theme-clientpref-night .afa-value,
+    html.skin-theme-clientpref-night .afa-masscheck-result {
         --afa-color-value-keyword: #749afa;
         --afa-color-value-string: #e08870;
         --afa-color-value-number: #b6f2b6;

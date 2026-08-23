@@ -96,6 +96,18 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
             const errorList = document.createElement('ul');
             errorContainer.appendChild(errorList);
             rootElement.appendChild(errorContainer);
+
+            const logEntryElements = document.querySelectorAll('[data-afl-log-id]');
+            const logIdToElementMap = new Map<number, HTMLElement>();
+            logEntryElements.forEach((el) => {
+                const logIdStr = el.getAttribute('data-afl-log-id');
+                if (logIdStr) {
+                    const logId = parseInt(logIdStr, 10);
+                    if (!isNaN(logId)) {
+                        logIdToElementMap.set(logId, el as HTMLElement);
+                    }
+                }
+            });
     
             const treeRootElement = document.createElement('div');
             rootElement.appendChild(treeRootElement);
@@ -125,6 +137,15 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
                     errorList.appendChild(errorItem);
                     
                     errorContainer.style.display = 'block';
+                },
+                (logId, result) => {
+                    const logEntryElement = logIdToElementMap.get(logId);
+                    if (logEntryElement) {
+                        logEntryElement.classList.add(
+                            'afa-masscheck-result',
+                            result ? 'afa-masscheck-result-true' : 'afa-masscheck-result-false'
+                        );
+                    }
                 }
             );
         });
@@ -135,7 +156,8 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
         filterId: string,
         count: number,
         progressCallback?: (processed: number, isFinished: boolean, logTimestamp?: string) => void,
-        errorCallback?: (error: Error) => void
+        errorCallback?: (error: Error) => void,
+        markResultCallback?: (logId: number, result: boolean) => void
     ) {
         progressCallback?.(0, false);
         const nodeFactory = new abuseFilter.evaluator.nodes.EvaluableNodeFactory();
@@ -178,7 +200,14 @@ mw.hook('userjs.abuseFilter').add((abuseFilter: typeof mw.libs.abuseFilter) => {
                         evaluationContext.setLogDate(logEntry.timestamp);
                     }
 
-                    await evaluator.evaluateNode(rootNode, evaluationContext);
+                    const value = await evaluator.evaluateNode(rootNode, evaluationContext);
+
+                    // Only mark the result as true/false if we're sure of the value. For undefined, mark nothing,
+                    // not to mislead the user into thinking that the filter would have matched or not matched the log entry.
+                    const valueIsTruthy = value.isTruthy();
+                    if (valueIsTruthy !== null) {
+                        markResultCallback?.(logEntry.id, valueIsTruthy);
+                    }
                 } catch (error) {
                     errorCallback?.(error instanceof Error ? error
                         : new Error(i18n('afa-masscheck-evaluationerror', error)));
