@@ -123,7 +123,7 @@ mw.hook('userjs.abuseFilter').fire(_abuseFilter);
 
 // TODO: put this to the GUI package
 mw.util.addCSS(`
-.afa-tree-container, .afa-value {
+.afa-tree-container, .afa-value, .afa-masscheck-result {
     --afa-color-value-keyword: blue;
     --afa-color-value-string: brown;
     --afa-color-value-number: darkgreen;
