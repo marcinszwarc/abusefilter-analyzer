@@ -315,12 +315,27 @@ mw.util.addCSS(`
     overflow-y: auto;
 }
 
+.afa-masscheck-result::before {
+    margin-right: 0.3em;
+}
+
+.afa-masscheck-result-true::before {
+    content: '✔';
+    color: var(--afa-color-true);
+}
+
+.afa-masscheck-result-false::before {
+    content: '✘';
+    color: var(--afa-color-false);
+}
+
 summary {
     width: fit-content;
 }
 
 html.skin-theme-clientpref-night .afa-tree-container,
-html.skin-theme-clientpref-night .afa-value {
+html.skin-theme-clientpref-night .afa-value,
+html.skin-theme-clientpref-night .afa-masscheck-result {
     --afa-color-value-keyword: #749afa;
     --afa-color-value-string: #e08870;
     --afa-color-value-number: #b6f2b6;
@@ -333,7 +348,8 @@ html.skin-theme-clientpref-night .afa-value {
 
 @media screen and (prefers-color-scheme: dark) {
     html.skin-theme-clientpref-os .afa-tree-container,
-    html.skin-theme-clientpref-night .afa-value {
+    html.skin-theme-clientpref-night .afa-value,
+    html.skin-theme-clientpref-night .afa-masscheck-result {
         --afa-color-value-keyword: #749afa;
         --afa-color-value-string: #e08870;
         --afa-color-value-number: #b6f2b6;
@@ -6432,6 +6448,17 @@ mw.hook('userjs.abuseFilter').add((abuseFilter) => {
             const errorList = document.createElement('ul');
             errorContainer.appendChild(errorList);
             rootElement.appendChild(errorContainer);
+            const logEntryElements = document.querySelectorAll('[data-afl-log-id]');
+            const logIdToElementMap = new Map();
+            logEntryElements.forEach((el) => {
+                const logIdStr = el.getAttribute('data-afl-log-id');
+                if (logIdStr) {
+                    const logId = parseInt(logIdStr, 10);
+                    if (!isNaN(logId)) {
+                        logIdToElementMap.set(logId, el);
+                    }
+                }
+            });
             const treeRootElement = document.createElement('div');
             rootElement.appendChild(treeRootElement);
             displayFrequencyAnalysis(treeRootElement, filterId, count, (processed, isFinished, logTimestamp) => {
@@ -6456,10 +6483,15 @@ mw.hook('userjs.abuseFilter').add((abuseFilter) => {
                 errorItem.textContent = error.message;
                 errorList.appendChild(errorItem);
                 errorContainer.style.display = 'block';
+            }, (logId, result) => {
+                const logEntryElement = logIdToElementMap.get(logId);
+                if (logEntryElement) {
+                    logEntryElement.classList.add('afa-masscheck-result', result ? 'afa-masscheck-result-true' : 'afa-masscheck-result-false');
+                }
             });
         });
     }
-    async function displayFrequencyAnalysis(rootElement, filterId, count, progressCallback, errorCallback) {
+    async function displayFrequencyAnalysis(rootElement, filterId, count, progressCallback, errorCallback, markResultCallback) {
         var _a, e_1, _b, _c;
         progressCallback === null || progressCallback === void 0 ? void 0 : progressCallback(0, false);
         const nodeFactory = new abuseFilter.evaluator.nodes.EvaluableNodeFactory();
@@ -6498,7 +6530,13 @@ mw.hook('userjs.abuseFilter').add((abuseFilter) => {
                         if (logEntry.timestamp) {
                             evaluationContext.setLogDate(logEntry.timestamp);
                         }
-                        await evaluator.evaluateNode(rootNode, evaluationContext);
+                        const value = await evaluator.evaluateNode(rootNode, evaluationContext);
+                        // Only mark the result as true/false if we're sure of the value. For undefined, mark nothing,
+                        // not to mislead the user into thinking that the filter would have matched or not matched the log entry.
+                        const valueIsTruthy = value.isTruthy();
+                        if (valueIsTruthy !== null) {
+                            markResultCallback === null || markResultCallback === void 0 ? void 0 : markResultCallback(logEntry.id, valueIsTruthy);
+                        }
                     }
                     catch (error) {
                         errorCallback === null || errorCallback === void 0 ? void 0 : errorCallback(error instanceof Error ? error
@@ -6842,17 +6880,17 @@ class ValueFrequencyPopup {
 /******/ 	]);
 /************************************************************************/
 /******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
+/******/ 	const __webpack_module_cache__ = {};
 /******/ 	
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		const cachedModule = __webpack_module_cache__[moduleId];
 /******/ 		if (cachedModule !== undefined) {
 /******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 		const module = __webpack_module_cache__[moduleId] = {
 /******/ 			// no module.id needed
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
@@ -6868,11 +6906,26 @@ class ValueFrequencyPopup {
 /************************************************************************/
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};
@@ -6887,7 +6940,7 @@ class ValueFrequencyPopup {
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
 /******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			if(Symbol.toStringTag) {
 /******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
@@ -6895,8 +6948,8 @@ class ValueFrequencyPopup {
 /******/ 	})();
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+let __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 (() => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _public_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
