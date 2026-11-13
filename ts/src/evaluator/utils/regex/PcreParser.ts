@@ -725,12 +725,16 @@ class PcreWellKnownCharacterClass implements PcreToken {
     private readonly classDesignator: string;
     private readonly originalString: string;
 
+    /** Definition of \w (without square brackets) */
+    public static readonly WORD_CHARS ='\\p{L}\\p{N}\\p{Mn}\\p{Pc}';
+
     public constructor(classDesignator: string, originalString?: string) {
         this.classDesignator = classDesignator;
         this.originalString = originalString ?? classDesignator;
     }
 
     public toEcmaRegexString(emulateOptions?: EmulateOptions): string {
+        // TODO: The definitions below probably need fixing for use in character classes
         emulateOptions ??= getDefaultEmulateOptions();
 
         // \h is not supported in ECMA regex
@@ -774,6 +778,20 @@ class PcreWellKnownCharacterClass implements PcreToken {
         if (this.classDesignator === '\\N') {
             return '[^\\n\\r\\f\\x0b\\x85\\u2028\\u2029]';
         }
+        // \w and \W are processed as ASCII in ECMA
+        if (this.classDesignator === '\\w') {
+            return '[' + PcreWellKnownCharacterClass.WORD_CHARS + ']';
+        }
+        if (this.classDesignator === '\\W') {
+            return '[^' + PcreWellKnownCharacterClass.WORD_CHARS + ']';
+        }
+        // \d and \D in ECMA only recognize ASCII digits
+        if (this.classDesignator === '\\d') {
+            return '\\p{Nd}';
+        }
+        if (this.classDesignator === '\\D') {
+            return '\\P{Nd}';
+        }
 
         return this.classDesignator;
     }
@@ -810,8 +828,17 @@ class PcreAnchor implements PcreToken {
     public toEcmaRegexString(emulateOptions?: EmulateOptions): string {
         emulateOptions ??= getDefaultEmulateOptions();
 
-        // Word boundary are supported in ECMA regex
-        if (this.anchor.toLowerCase() === '\\b') return this.anchor;
+        // ECMA implementation of \b is incompatible with PCRE
+        // PCRE recognizes Unicode as word-chars, JS as non-word chars
+        // To properly support patterns like /ą\b/, we have to rewrite the assertions
+        if (this.anchor.toLowerCase() === '\\b') {
+            const W = '[' + PcreWellKnownCharacterClass.WORD_CHARS +  ']';
+            if (this.anchor === '\\b') {
+                return `(?:(?<=${W})(?!${W})|(?<!${W})(?=${W}))`;
+            } else {
+                return `(?:(?<=${W})(?=${W})|(?<!${W})(?!${W}))`;
+            }
+        }
         
         /* Transform in multiline
             ^ -> (?:^|(?<=\n))
